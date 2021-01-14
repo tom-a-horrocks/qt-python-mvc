@@ -1,7 +1,6 @@
 from PySide6.QtWidgets import QLineEdit, QDialog, QPushButton, QVBoxLayout, QLabel
-
 from binding import Binder
-from .controller import MainViewModel, MainController
+from .controller import MainModel, MainController
 
 
 class MainView(QDialog):
@@ -10,7 +9,7 @@ class MainView(QDialog):
     true_property as they aren't showing in PyCharm's autocomplete yet.
     """
 
-    def __init__(self, vm: MainViewModel, controller: MainController):
+    def __init__(self, model: MainModel, controller: MainController):
         super(MainView, self).__init__()
         self.setWindowTitle("My Form")
 
@@ -27,13 +26,13 @@ class MainView(QDialog):
         self.setLayout(layout)
 
         # Bind view elements
-        b = Binder(vm)
-        b.two_way(elements=(line_edit.text, MainViewModel.edit_text),
+        b = Binder(model)
+        b.two_way(elements=(line_edit.text, MainModel.edit_text),
                   initial_value='Enter text here...')
-        b.one_way(source=MainViewModel.label_text,
+        b.one_way(source=MainModel.label_text,
                   sink=label.text,
                   initial_value='Enter text here...')
-        b.one_way(source=MainViewModel.button_enabled,
+        b.one_way(source=MainModel.button_enabled,
                   sink=push_button.isEnabled)
 
         # Bind commands which aren't initiated by view model

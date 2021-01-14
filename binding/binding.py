@@ -6,6 +6,8 @@ from .observable import Observable
 
 D = namedtuple('Descriptors', 'getter setter signal')
 
+# This list relates (unbound) widget getters to the related setters and
+# update signal (where it exists).
 qt_getter_setter_signals = [
     D(getter=QLineEdit.text,    setter=QLineEdit.setText,  signal=QLineEdit.textChanged),
     D(getter=QLabel.text,       setter=QLabel.setText,     signal=None),

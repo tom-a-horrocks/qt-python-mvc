@@ -1,7 +1,7 @@
 from binding import Observable, observable
 
 
-class MainViewModel(Observable):
+class MainModel(Observable):
 
     def __init__(self):
         super().__init__()
@@ -28,7 +28,7 @@ class MainViewModel(Observable):
         self._label_text = val
 
     @property
-    def button_enabled(self) -> str:
+    def button_enabled(self) -> bool:
         return self._button_enabled
 
     @button_enabled.setter
@@ -39,15 +39,15 @@ class MainViewModel(Observable):
 
 class MainController:
 
-    def __init__(self, vm: MainViewModel):
-        self.vm = vm
+    def __init__(self, model: MainModel):
+        self.model = model
 
         # It is possible to change controller calls from the ViewModel.
         # This will run on the UI thread(!)
-        self.vm.add_callback(MainViewModel.edit_text, self.set_label)
+        self.model.add_callback(MainModel.edit_text, self.set_label)
 
     def set_label(self):
-        self.vm.label_text = self.vm.edit_text
+        self.model.label_text = self.model.edit_text
 
     def disable_button(self):
-        self.vm.button_enabled = False
+        self.model.button_enabled = False
