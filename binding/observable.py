@@ -8,21 +8,25 @@ class Observable:
     def __init__(self):
         super().__init__()
         self._callbacks = defaultdict(list)
-        self._callbacks_enabled = defaultdict(lambda: True)
+        self._ui_callbacks = defaultdict(list)
+        self._ui_callbacks_enabled = defaultdict(lambda: True)
 
-    def add_callback(self, prop: property, f: Callable[[], None]):
-        self._callbacks[prop.fset.__name__].append(f)
+    def add_callback(self, prop: property, f: Callable[[], None], ui=False):
+        d = self._ui_callbacks if ui else self._callbacks
+        d[prop.fset.__name__].append(f)
 
-    def disable_callbacks(self, prop: property):
-        self._callbacks_enabled[prop.fset.__name__] = False
+    def disable_ui_callbacks(self, prop: property):
+        self._ui_callbacks_enabled[prop.fset.__name__] = False
 
-    def enable_callbacks(self, prop: property):
-        self._callbacks_enabled[prop.fset.__name__] = True
+    def enable_ui_callbacks(self, prop: property):
+        self._ui_callbacks_enabled[prop.fset.__name__] = True
 
     def _notify(self, property_name: str):
-        if self._callbacks_enabled[property_name]:
-            for f in self._callbacks[property_name]:
+        if self._ui_callbacks_enabled[property_name]:
+            for f in self._ui_callbacks[property_name]:
                 f()
+        for f in self._callbacks[property_name]:
+            f()
 
 
 def observable(func):

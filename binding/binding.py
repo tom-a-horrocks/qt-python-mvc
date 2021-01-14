@@ -1,14 +1,16 @@
 from collections import namedtuple
 from functools import partial
 
-from PySide6.QtWidgets import QWidget, QLineEdit
+from PySide6.QtWidgets import QWidget, QLineEdit, QLabel
 from .observable import Observable
 
 D = namedtuple('Descriptors', 'getter setter signal')
 
 qt_getter_setter_signals = [
     D(getter=QLineEdit.text,    setter=QLineEdit.setText,  signal=QLineEdit.textChanged),
+    D(getter=QLabel.text,       setter=QLabel.setText,     signal=None),
     D(getter=QWidget.isVisible, setter=QWidget.setVisible, signal=None),
+    D(getter=QWidget.isEnabled, setter=QWidget.setEnabled, signal=None),
 ]
 
 
@@ -21,22 +23,25 @@ class Binder:
     def __init__(self, model: Observable):
         self.model = model
 
-    def two_way(self, arg1, arg2):
-        widget_getter, model_prop = self._identify(arg1, arg2)
+    def two_way(self, elements, initial_value=None):
+        assert len(elements) == 2, "Can only bind two elements at a time"
+        widget_getter, model_prop = self._identify(*elements)
         self._bind(widget_getter.__self__,
                    self.model,
                    *self._get_descriptors(widget_getter),
                    model_prop,
-                   'both')
+                   'both',
+                   initial_value)
 
-    def one_way(self, source, sink):
+    def one_way(self, source, sink, initial_value=None):
         widget_getter, model_prop = self._identify(source, sink)
         source = 'model' if source == model_prop else 'view'
         self._bind(widget_getter.__self__,
                    self.model,
                    *self._get_descriptors(widget_getter),
                    model_prop,
-                   source)
+                   source,
+                   initial_value)
 
     @staticmethod
     def _inflate(getter_descriptor, setter_descriptor, signal_descriptor, widget):
@@ -62,7 +67,8 @@ class Binder:
               widget_setter_descriptor,
               widget_signal_descriptor,
               model_property_descriptor,
-              source: str):
+              source: str,
+              initial_value):
         w_getter, w_setter, w_sig = cls._inflate(widget_getter_descriptor,
                                                  widget_setter_descriptor,
                                                  widget_signal_descriptor,
@@ -70,6 +76,10 @@ class Binder:
 
         m_getter, m_setter = cls._inflate_model_functions(model_property_descriptor,
                                                           model)
+
+        if initial_value is not None:
+            w_setter(initial_value)
+            m_setter(initial_value)
 
         if w_sig is None and source in ('view', 'both'):
             raise RuntimeError(
@@ -85,18 +95,24 @@ class Binder:
                 w_setter(m_getter())
                 widget.blockSignals(False)
 
-            model.add_callback(model_property_descriptor, update_widget)
+            model.add_callback(model_property_descriptor, update_widget, ui=True)
 
         if source in ('view', 'both'):
             def update_model():
-                model.disable_callbacks(model_property_descriptor)
+                model.disable_ui_callbacks(model_property_descriptor)
                 m_setter(w_getter())
-                model.enable_callbacks(model_property_descriptor)
+                model.enable_ui_callbacks(model_property_descriptor)
 
             w_sig.connect(update_model)
 
     @staticmethod
     def _identify(arg1, arg2):
+        """
+        Identify the property and the method from the mixed args.
+        :param arg1: Either a property descriptor or a bound method.
+        :param arg2: Either a property descriptor or a bound method.
+        :return: The bound method and the property descriptor, in that order.
+        """
         if callable(arg1) and type(arg2) is property:
             return arg1, arg2
         if type(arg1) is property and callable(arg2):
@@ -108,9 +124,10 @@ class Binder:
     def _get_descriptors(cls, widget_getter):
         """
         Retrieves the descriptors for a widget's getter, setter, and signal
-        functions.
-        :param widget_getter:
-        :return: getter descriptor, setter descriptor, and signal descriptor
+        functions. Signal descriptor will be None if no matching signal
+        is found.
+        :param widget_getter: The (bound) widget's getter method
+        :return: Descriptors of the getter, setter, and signal
         """
         # Look up widget class details
         getter_name = widget_getter.__name__
