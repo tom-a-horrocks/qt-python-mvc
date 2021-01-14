@@ -2,7 +2,7 @@ import sys
 
 from PySide6.QtWidgets import QApplication
 
-from view import MainView
+from ui.view import MainView
 
 if __name__ == '__main__':
     # Create the Qt Application

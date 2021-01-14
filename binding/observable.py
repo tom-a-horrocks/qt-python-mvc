@@ -3,24 +3,6 @@ from collections import defaultdict
 from typing import Callable
 
 
-def observable(func):
-    @functools.wraps(func)
-    def wrapper(*args, **kwargs):
-        # Run setter
-        func(*args, **kwargs)
-
-        # Notify observers of update
-        try:
-            self, val = args
-            # val is unused for the sake of symmetry with QT
-            self._notify(func.__name__)
-        except AttributeError:
-            print(f'WARNING: no observers set for {func}. '
-                  f'Did you use the Observers mixin?')
-
-    return wrapper
-
-
 class Observable:
 
     def __init__(self):
@@ -41,3 +23,21 @@ class Observable:
         if self._callbacks_enabled[property_name]:
             for f in self._callbacks[property_name]:
                 f()
+
+
+def observable(func):
+    @functools.wraps(func)
+    def wrapper(*args, **kwargs):
+        # Run setter
+        func(*args, **kwargs)
+
+        # Notify observers of update
+        try:
+            self, val = args
+            # val is unused for the sake of symmetry with QT
+            self._notify(func.__name__)
+        except AttributeError:
+            print(f'WARNING: no observers set for {func}. '
+                  f'Did you use the Observers mixin?')
+
+    return wrapper

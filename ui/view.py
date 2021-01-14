@@ -1,9 +1,7 @@
-from PySide6.QtWidgets import QLineEdit, QDialog, QPushButton, QVBoxLayout, QWidget
-import binding
+from PySide6.QtWidgets import QLineEdit, QDialog, QPushButton, QVBoxLayout
 
-
-from binding import Source
-from controller import MainViewModel
+from binding import Binder
+from .controller import MainViewModel
 
 
 class MainView(QDialog):
@@ -31,14 +29,10 @@ class MainView(QDialog):
         # Bindings
         self.vm = MainViewModel()
 
-        bind = binding.with_objects(self.line_edit, self.vm)
-        bind(QLineEdit.text, MainViewModel.text, Source.BOTH)
-        bind = binding.with_objects(self.push_button, self.vm)
-        bind(QWidget.isVisible, MainViewModel.button_visible, Source.MODEL)
+        b = Binder(self.vm)
+        b.two_way(self.line_edit.text, MainViewModel.text)
+        b.one_way(MainViewModel.button_visible, self.push_button.isVisible)
 
         # Defaults
         self.vm.text = 'Initial text'
         self.vm.button_visible = False
-
-
-

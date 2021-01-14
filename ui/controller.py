@@ -1,4 +1,4 @@
-from observable import observable, Observable
+from binding import Observable, observable
 
 
 class MainViewModel(Observable):
