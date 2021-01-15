@@ -1,4 +1,5 @@
 from PySide6.QtWidgets import QLineEdit, QDialog, QPushButton, QVBoxLayout, QLabel, QCheckBox, QRadioButton
+
 from binding import Binder
 from .controller import MainModel, MainController
 
@@ -9,48 +10,48 @@ class MainView(QDialog):
     true_property as they aren't showing in PyCharm's autocomplete yet.
     """
 
-    def __init__(self, model: MainModel, controller: MainController):
+    def __init__(self):
         super(MainView, self).__init__()
         self.setWindowTitle("My Form")
 
         # Create widgets
-        line_edit = QLineEdit()
-        label = QLabel()
-        check_box = QCheckBox('This is a checkbox')
-        push_button = QPushButton("Disable me")
-        radio_buttons = [QRadioButton(f'Radio {i}') for i in range(3)]
+        self.line_edit = QLineEdit()
+        self.label = QLabel()
+        self.check_box = QCheckBox('This is a checkbox')
+        self.push_button = QPushButton("Disable me")
+        self.radio_buttons = [QRadioButton(f'Radio {i}') for i in range(3)]
 
         # Create layout and add widgets
         layout = QVBoxLayout()
-        layout.addWidget(line_edit)
-        layout.addWidget(label)
-        layout.addWidget(check_box)
-        layout.addWidget(push_button)
-        for rb in radio_buttons:
+        layout.addWidget(self.line_edit)
+        layout.addWidget(self.label)
+        layout.addWidget(self.check_box)
+        layout.addWidget(self.push_button)
+        for rb in self.radio_buttons:
             layout.addWidget(rb)
         self.setLayout(layout)
 
-        # Bind view elements
-        b = Binder(model)
-        b.two_way(elements=(line_edit.text, MainModel.edit_text),
-                  initial_value='Enter text here...')
-        b.one_way(source=MainModel.label_text,
-                  sink=label.text,
-                  initial_value='Enter text here...')
-        b.two_way(elements=(check_box.isChecked, MainModel.is_checked),
-                  initial_value=False)
-        b.one_way(source=MainModel.button_enabled,
-                  sink=push_button.isEnabled)
-
-        b.two_way(elements=(radio_buttons[0].isChecked, MainModel.checked_1),
-                  initial_value=False)
-        b.two_way(elements=(radio_buttons[1].isChecked, MainModel.checked_2),
-                  initial_value=False)
-        b.two_way(elements=(radio_buttons[2].isChecked, MainModel.checked_3),
-                  initial_value=True)
-
+    def bind_to_controller(self, controller: MainController):
         # Bind commands which aren't initiated by view model
         # VM bindings MUST go first to ensure controller gets the updated
         # value.
-        push_button.clicked.connect(controller.disable_button)
+        self.push_button.clicked.connect(controller.disable_button)
+
+    def bind_to_model(self, model: MainModel):
+        b = Binder(model)
+        b.two_way(elements=(self.line_edit.text, MainModel.edit_text),
+                  initial_value='Enter text here...')
+        b.one_way(source=MainModel.label_text,
+                  sink=self.label.text,
+                  initial_value='Enter text here...')
+        b.two_way(elements=(self.check_box.isChecked, MainModel.is_checked),
+                  initial_value=False)
+        b.one_way(source=MainModel.button_enabled,
+                  sink=self.push_button.isEnabled)
+        b.two_way(elements=(self.radio_buttons[0].isChecked, MainModel.checked_1),
+                  initial_value=False)
+        b.two_way(elements=(self.radio_buttons[1].isChecked, MainModel.checked_2),
+                  initial_value=False)
+        b.two_way(elements=(self.radio_buttons[2].isChecked, MainModel.checked_3),
+                  initial_value=True)
 

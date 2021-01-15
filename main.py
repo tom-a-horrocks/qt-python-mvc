@@ -8,11 +8,17 @@ from ui.view import MainView
 if __name__ == '__main__':
     # Create the Qt Application
     app = QApplication(sys.argv)
-    # Create and show the form
+
+    # Instantiate MVC classes and set bindings.
+    # Binding order matters so that view and model are consistent:
+    # (1) V<->M; (2) C<->M; (3) V<->C
     model = MainModel()
+    view = MainView()
+    view.bind_to_model(model)
     controller = MainController(model)
-    view = MainView(model, controller)
-    controller.add_callbacks()  # Do after view bindings created
+    controller.add_callbacks()
+    view.bind_to_controller(controller)
+
+    # Show and run QT loop
     view.show()
-    # Run the main Qt loop
     sys.exit(app.exec_())
