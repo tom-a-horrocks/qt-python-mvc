@@ -1,7 +1,7 @@
 from collections import namedtuple
 from functools import partial
 
-from PySide6.QtWidgets import QWidget, QLineEdit, QLabel
+from PySide6.QtWidgets import QWidget, QLineEdit, QLabel, QCheckBox
 from .observable import Observable
 
 D = namedtuple('Descriptors', 'getter setter signal')
@@ -13,6 +13,7 @@ qt_getter_setter_signals = [
     D(getter=QLabel.text,       setter=QLabel.setText,     signal=None),
     D(getter=QWidget.isVisible, setter=QWidget.setVisible, signal=None),
     D(getter=QWidget.isEnabled, setter=QWidget.setEnabled, signal=None),
+    D(getter=QCheckBox.isChecked, setter=QCheckBox.setChecked, signal=QCheckBox.stateChanged),
 ]
 
 

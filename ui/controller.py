@@ -8,6 +8,7 @@ class MainModel(Observable):
         self._edit_text = ''
         self._label_text = ''
         self._button_enabled = False
+        self._is_checked = False
 
     @property
     def edit_text(self) -> str:
@@ -35,6 +36,15 @@ class MainModel(Observable):
     @observable
     def button_enabled(self, val: bool) -> None:
         self._button_enabled = val
+
+    @property
+    def is_checked(self) -> bool:
+        return self._is_checked
+
+    @is_checked.setter
+    @observable
+    def is_checked(self, val: bool) -> None:
+        self._is_checked = val
 
 
 class MainController:

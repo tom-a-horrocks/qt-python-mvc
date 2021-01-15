@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QLineEdit, QDialog, QPushButton, QVBoxLayout, QLabel
+from PySide6.QtWidgets import QLineEdit, QDialog, QPushButton, QVBoxLayout, QLabel, QCheckBox
 from binding import Binder
 from .controller import MainModel, MainController
 
@@ -16,12 +16,14 @@ class MainView(QDialog):
         # Create widgets
         line_edit = QLineEdit()
         label = QLabel()
+        check_box = QCheckBox('This is a checkbox')
         push_button = QPushButton("Disable me")
 
         # Create layout and add widgets
         layout = QVBoxLayout()
         layout.addWidget(line_edit)
         layout.addWidget(label)
+        layout.addWidget(check_box)
         layout.addWidget(push_button)
         self.setLayout(layout)
 
@@ -32,6 +34,8 @@ class MainView(QDialog):
         b.one_way(source=MainModel.label_text,
                   sink=label.text,
                   initial_value='Enter text here...')
+        b.two_way(elements=(check_box.isChecked, MainModel.is_checked),
+                  initial_value=False)
         b.one_way(source=MainModel.button_enabled,
                   sink=push_button.isEnabled)
 
