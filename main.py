@@ -12,6 +12,7 @@ if __name__ == '__main__':
     model = MainModel()
     controller = MainController(model)
     view = MainView(model, controller)
+    controller.add_callbacks()  # Do after view bindings created
     view.show()
     # Run the main Qt loop
     sys.exit(app.exec_())
