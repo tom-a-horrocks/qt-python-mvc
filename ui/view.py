@@ -1,4 +1,4 @@
-from PySide6.QtWidgets import QLineEdit, QDialog, QPushButton, QVBoxLayout, QLabel, QCheckBox
+from PySide6.QtWidgets import QLineEdit, QDialog, QPushButton, QVBoxLayout, QLabel, QCheckBox, QRadioButton
 from binding import Binder
 from .controller import MainModel, MainController
 
@@ -18,6 +18,7 @@ class MainView(QDialog):
         label = QLabel()
         check_box = QCheckBox('This is a checkbox')
         push_button = QPushButton("Disable me")
+        radio_buttons = [QRadioButton(f'Radio {i}') for i in range(3)]
 
         # Create layout and add widgets
         layout = QVBoxLayout()
@@ -25,6 +26,8 @@ class MainView(QDialog):
         layout.addWidget(label)
         layout.addWidget(check_box)
         layout.addWidget(push_button)
+        for rb in radio_buttons:
+            layout.addWidget(rb)
         self.setLayout(layout)
 
         # Bind view elements
@@ -38,6 +41,13 @@ class MainView(QDialog):
                   initial_value=False)
         b.one_way(source=MainModel.button_enabled,
                   sink=push_button.isEnabled)
+
+        b.two_way(elements=(radio_buttons[0].isChecked, MainModel.checked_1),
+                  initial_value=False)
+        b.two_way(elements=(radio_buttons[1].isChecked, MainModel.checked_2),
+                  initial_value=False)
+        b.two_way(elements=(radio_buttons[2].isChecked, MainModel.checked_3),
+                  initial_value=True)
 
         # Bind commands which aren't initiated by view model
         # VM bindings MUST go first to ensure controller gets the updated

@@ -13,7 +13,7 @@ qt_getter_setter_signals = [
     D(getter=QLabel.text,       setter=QLabel.setText,     signal=None),
     D(getter=QWidget.isVisible, setter=QWidget.setVisible, signal=None),
     D(getter=QWidget.isEnabled, setter=QWidget.setEnabled, signal=None),
-    D(getter=QCheckBox.isChecked, setter=QCheckBox.setChecked, signal=QCheckBox.stateChanged),
+    D(getter=QCheckBox.isChecked, setter=QCheckBox.setChecked, signal=QCheckBox.toggled),
 ]
 
 

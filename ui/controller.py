@@ -9,6 +9,9 @@ class MainModel(Observable):
         self._label_text = ''
         self._button_enabled = False
         self._is_checked = False
+        self._checked_1 = False
+        self._checked_2 = False
+        self._checked_3 = False
 
     @property
     def edit_text(self) -> str:
@@ -45,6 +48,39 @@ class MainModel(Observable):
     @observable
     def is_checked(self, val: bool) -> None:
         self._is_checked = val
+
+    @property
+    def checked_1(self) -> bool:
+        return self._checked_1
+
+    @checked_1.setter
+    @observable
+    def checked_1(self, val: bool) -> None:
+        self._checked_1 = val
+
+    @property
+    def checked_2(self) -> bool:
+        return self._checked_2
+
+    @checked_2.setter
+    @observable
+    def checked_2(self, val: bool) -> None:
+        self._checked_2 = val
+
+    @property
+    def checked_3(self) -> bool:
+        return self._checked_3
+
+    @checked_3.setter
+    @observable
+    def checked_3(self, val: bool) -> None:
+        self._checked_3 = val
+
+    def __repr__(self):
+        klass = self.__class__
+        prop_names = [a for a in dir(klass)
+                      if type(getattr(klass, a)) == property]
+        return str({n: getattr(self, n) for n in prop_names})
 
 
 class MainController:
