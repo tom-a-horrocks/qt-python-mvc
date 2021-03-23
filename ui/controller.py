@@ -1,4 +1,4 @@
-from binding import Observable, observable
+from .. import Observable, observable
 
 
 class MainModel(Observable):

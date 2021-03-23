@@ -1,7 +1,7 @@
 from collections import namedtuple
 from functools import partial
 
-from PySide6.QtWidgets import QWidget, QLineEdit, QLabel, QCheckBox
+from PySide2.QtWidgets import QWidget, QLineEdit, QLabel, QCheckBox
 from .observable import Observable
 
 D = namedtuple('Descriptors', 'getter setter signal')
@@ -145,7 +145,8 @@ class Binder:
                 getter_descriptor = getattr(klass, getter_name)
                 if not callable(getter_descriptor):
                     continue
-                return getter_descriptor, *cls._descriptors[getter_descriptor]
+                retval = getter_descriptor, *cls._descriptors[getter_descriptor]
+                return retval
             except (AttributeError, KeyError):
                 # AttributeError: missing descriptor
                 # KeyError: no entry for given descriptor

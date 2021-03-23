@@ -1,6 +1,6 @@
 import sys
 
-from PySide6.QtWidgets import QApplication
+from PySide2.QtWidgets import QApplication
 
 from ui.controller import MainModel, MainController
 from ui.view import MainView

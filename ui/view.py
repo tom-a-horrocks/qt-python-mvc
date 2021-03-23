@@ -1,6 +1,6 @@
-from PySide6.QtWidgets import QLineEdit, QDialog, QPushButton, QVBoxLayout, QLabel, QCheckBox, QRadioButton
+from PySide2.QtWidgets import QLineEdit, QDialog, QPushButton, QVBoxLayout, QLabel, QCheckBox, QRadioButton
 
-from binding import Binder
+from .. import Binder
 from .controller import MainModel, MainController
 
 
