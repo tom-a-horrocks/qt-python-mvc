@@ -21,6 +21,11 @@ class Observable:
     def enable_ui_callbacks(self, prop: property):
         self._ui_callbacks_enabled[prop.fset.__name__] = True
 
+    def remove_callbacks(self):
+        self._callbacks.clear()
+        self._ui_callbacks.clear()
+        self._ui_callbacks_enabled.clear()
+
     def _notify(self, property_name: str):
         if self._ui_callbacks_enabled[property_name]:
             for f in self._ui_callbacks[property_name]:

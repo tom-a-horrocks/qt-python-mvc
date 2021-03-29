@@ -9,11 +9,11 @@ D = namedtuple('Descriptors', 'getter setter signal')
 # This list relates (unbound) widget getters to the related setters and
 # update signal (where it exists).
 qt_getter_setter_signals = [
-    D(getter=QLineEdit.text,    setter=QLineEdit.setText,  signal=QLineEdit.textChanged),
+    D(getter=QLineEdit.text,    setter=QLineEdit.setText,  signal='textChanged'),
     D(getter=QLabel.text,       setter=QLabel.setText,     signal=None),
     D(getter=QWidget.isVisible, setter=QWidget.setVisible, signal=None),
     D(getter=QWidget.isEnabled, setter=QWidget.setEnabled, signal=None),
-    D(getter=QCheckBox.isChecked, setter=QCheckBox.setChecked, signal=QCheckBox.toggled),
+    D(getter=QCheckBox.isChecked, setter=QCheckBox.setChecked, signal='toggled'),
 ]
 
 
@@ -26,9 +26,8 @@ class Binder:
     def __init__(self, model: Observable):
         self.model = model
 
-    def two_way(self, elements, initial_value=None):
-        assert len(elements) == 2, "Can only bind two elements at a time"
-        widget_getter, model_prop = self._identify(*elements)
+    def two_way(self, element1, element2, initial_value=None):
+        widget_getter, model_prop = self._identify(element1, element2)
         self._bind(widget_getter.__self__,
                    self.model,
                    *self._get_descriptors(widget_getter),
@@ -47,11 +46,13 @@ class Binder:
                    initial_value)
 
     @staticmethod
-    def _inflate(getter_descriptor, setter_descriptor, signal_descriptor, widget):
+    def _inflate(getter_descriptor, setter_descriptor, signal_name, widget):
+        # signal retrieved dynamically (via string) because it resolves as a class attribute, so can't be used
+        # as a descriptor.
         return (
             getter_descriptor.__get__(widget),
             setter_descriptor.__get__(widget),
-            signal_descriptor.__get__(widget) if signal_descriptor is not None else None
+            widget.__getattribute__(signal_name) if signal_name is not None else None
         )
 
     @staticmethod
