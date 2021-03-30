@@ -3,17 +3,19 @@ from functools import partial
 
 from PySide2.QtWidgets import QWidget, QLineEdit, QLabel, QCheckBox
 from .observable import Observable
+from .widget import BindableQTableWidget
 
 D = namedtuple('Descriptors', 'getter setter signal')
 
 # This list relates (unbound) widget getters to the related setters and
 # update signal (where it exists).
 qt_getter_setter_signals = [
-    D(getter=QLineEdit.text,    setter=QLineEdit.setText,  signal='textChanged'),
-    D(getter=QLabel.text,       setter=QLabel.setText,     signal=None),
-    D(getter=QWidget.isVisible, setter=QWidget.setVisible, signal=None),
-    D(getter=QWidget.isEnabled, setter=QWidget.setEnabled, signal=None),
-    D(getter=QCheckBox.isChecked, setter=QCheckBox.setChecked, signal='toggled'),
+    D(getter=QLineEdit.text,        setter=QLineEdit.setText,        signal='textChanged'),
+    D(getter=QLabel.text,           setter=QLabel.setText,           signal=None),
+    D(getter=QWidget.isVisible,     setter=QWidget.setVisible,       signal=None),
+    D(getter=QWidget.isEnabled,     setter=QWidget.setEnabled,       signal=None),
+    D(getter=QCheckBox.isChecked,   setter=QCheckBox.setChecked,     signal='toggled'),
+    D(getter=BindableQTableWidget.get_data, setter=BindableQTableWidget.set_data, signal=None)
 ]
 
 
