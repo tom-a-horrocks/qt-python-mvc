@@ -2,6 +2,7 @@ from collections import namedtuple
 from functools import partial
 
 from PySide2.QtWidgets import QWidget, QLineEdit, QLabel, QCheckBox, QProgressBar, QDialog
+
 from .observable import Observable
 from .widget import BindableQTableWidget
 

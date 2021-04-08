@@ -31,7 +31,6 @@ class BindableQTableWidget(QTableWidget):
     def set_data(self, data: Union[List[List[str]], List[List[QTableWidgetItem]]]):
         self.setRowCount(0)
         self.setRowCount(len(data))
-        print(f'Entering into table with shape {(self.rowCount(), self.columnCount())}')
         for i, row in enumerate(data):
             for j, element in enumerate(row):
                 if type(element) is str:

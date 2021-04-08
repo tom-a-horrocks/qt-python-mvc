@@ -1,7 +1,7 @@
 from PySide2.QtWidgets import QLineEdit, QDialog, QPushButton, QVBoxLayout, QLabel, QCheckBox, QRadioButton
 
-from .. import Binder
 from .controller import MainModel, MainController
+from .. import Binder
 
 
 class MainView(QDialog):
