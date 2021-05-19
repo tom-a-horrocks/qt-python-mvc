@@ -1,30 +1,67 @@
 from collections import namedtuple
 from functools import partial
+from typing import Any, Callable
 
+from PySide2 import QtWidgets
+from PySide2.QtCore import QObject, Signal
 from PySide2.QtWidgets import QWidget, QLineEdit, QLabel, QCheckBox, QProgressBar, QDialog
 
 from .observable import Observable
 from .widget import BindableQTableWidget
 
-D = namedtuple('Descriptors', 'getter setter signal')
+D = namedtuple('Descriptors', 'getter setter update_signal')
 
 # This list relates (unbound) widget getters to the related setters and
 # update signal (where it exists).
 qt_getter_setter_signals = [
-    D(getter=QLineEdit.text,                  setter=QLineEdit.setText,               signal='textChanged'),
-    D(getter=QLabel.text,                     setter=QLabel.setText,                  signal=None),
-    D(getter=QWidget.isVisible,               setter=QWidget.setVisible,              signal=None),
-    D(getter=QWidget.isEnabled,               setter=QWidget.setEnabled,              signal=None),
-    D(getter=QCheckBox.isChecked,             setter=QCheckBox.setChecked,            signal='toggled'),
-    D(getter=BindableQTableWidget.text_items, setter=BindableQTableWidget.set_data,   signal=None),
-    D(getter=BindableQTableWidget.QT_items,   setter=BindableQTableWidget.set_data,   signal=None),
-    D(getter=QProgressBar.value,              setter=QProgressBar.setValue,           signal=None),
-    D(getter=QProgressBar.maximum,            setter=QProgressBar.setMaximum,         signal=None),
-    D(getter=QDialog.result,                  setter=QDialog.setResult,               signal='finished')
+    D(getter=QLineEdit.text,                  setter=QLineEdit.setText,               update_signal='textChanged'),
+    D(getter=QLabel.text,                     setter=QLabel.setText,                  update_signal=None),
+    D(getter=QWidget.isVisible,               setter=QWidget.setVisible,              update_signal=None),
+    D(getter=QWidget.isEnabled,               setter=QWidget.setEnabled,              update_signal=None),
+    D(getter=QCheckBox.isChecked,             setter=QCheckBox.setChecked,            update_signal='toggled'),
+    D(getter=BindableQTableWidget.text_items, setter=BindableQTableWidget.set_data,   update_signal=None),
+    D(getter=BindableQTableWidget.QT_items,   setter=BindableQTableWidget.set_data,   update_signal=None),
+    D(getter=QProgressBar.value,              setter=QProgressBar.setValue,           update_signal=None),
+    D(getter=QProgressBar.maximum,            setter=QProgressBar.setMaximum,         update_signal=None),
+    D(getter=QDialog.result,                  setter=QDialog.setResult,               update_signal='finished')
 ]
 
 
+class QWidgetUpdater(QObject):
+
+    _sig = Signal()
+
+    def __init__(self, widget: QWidget, widget_setter: Callable[..., None], model_getter: Callable[[], Any]):
+        super().__init__()
+        app = QtWidgets.QApplication.instance()
+        if app is None:  # Headless mode
+            return
+        if app.thread() != self.thread():
+            raise RuntimeError('Bindings which update widgets must be created on the GUI thread')
+
+        self.widget = widget
+        self.model_getter = model_getter
+        self.widget_setter = widget_setter
+        self.got = None  # retrieved value from model
+
+        self._sig.connect(self.update_ui_with_retrieved_value)
+
+    def update_ui_with_retrieved_value(self):
+        self.widget.blockSignals(True)
+        self.widget_setter(self.got)
+        self.widget.blockSignals(False)
+
+    def __call__(self, *args, **kwargs):
+        self.got = self.model_getter()  # Save value immediately so displayed UI value matches model at time of update
+        self._sig.emit()
+
+
 class Binder:
+    """
+    Class for binding properties. Any binding which updates the UI (i.e. source='model') _must_ be created on the
+    main thread.
+    """
+
     _descriptors = {
         getter: (setter, signal)
         for getter, setter, signal in qt_getter_setter_signals
@@ -101,12 +138,8 @@ class Binder:
                 f'is missing a signal in qt_getter_setter_signals.')
 
         if source in ('model', 'both'):
-            def update_widget():
-                widget.blockSignals(True)
-                w_setter(m_getter())
-                widget.blockSignals(False)
-
-            model.add_callback(model_property_descriptor, update_widget, ui=True)
+            # Note that callback will get model value -just- before update, not necessarily of model value at change.
+            model.add_callback(model_property_descriptor, QWidgetUpdater(widget, w_setter, m_getter), ui=True)
 
         if source in ('view', 'both'):
             def update_model():

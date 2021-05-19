@@ -12,8 +12,8 @@ class Observable:
         self._ui_callbacks_enabled = defaultdict(lambda: True)
 
     def add_callback(self, prop: property, f: Callable[[], None], ui=False):
-        d = self._ui_callbacks if ui else self._callbacks
-        d[prop.fset.__name__].append(f)
+        callbacks_map = self._ui_callbacks if ui else self._callbacks
+        callbacks_map[prop.fset.__name__].append(f)
 
     def disable_ui_callbacks(self, prop: property):
         self._ui_callbacks_enabled[prop.fset.__name__] = False
