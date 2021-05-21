@@ -1,9 +1,10 @@
 from collections import namedtuple
 from functools import partial
-from typing import Any, Callable
+from threading import Lock
+from typing import Any, Callable, Optional, TypeVar
 
 from PySide2 import QtWidgets
-from PySide2.QtCore import QObject, Signal
+from PySide2.QtCore import QObject, Signal, QThread
 from PySide2.QtWidgets import QWidget, QLineEdit, QLabel, QCheckBox, QProgressBar, QDialog
 
 from .observable import Observable
@@ -29,31 +30,110 @@ qt_getter_setter_signals = [
 
 class QWidgetUpdater(QObject):
 
-    _sig = Signal()
+    _sig_update_widget = Signal()
 
     def __init__(self, widget: QWidget, widget_setter: Callable[..., None], model_getter: Callable[[], Any]):
         super().__init__()
-        app = QtWidgets.QApplication.instance()
-        if app is None:  # Headless mode
-            return
-        if app.thread() != self.thread():
-            raise RuntimeError('Bindings which update widgets must be created on the GUI thread')
+        self._widget = widget
+        self._model_getter = model_getter
+        self._widget_setter = widget_setter
+        self._got = None  # retrieved value from model
 
-        self.widget = widget
-        self.model_getter = model_getter
-        self.widget_setter = widget_setter
-        self.got = None  # retrieved value from model
+        self._sig_update_widget.connect(self.update_widget)
 
-        self._sig.connect(self.update_ui_with_retrieved_value)
-
-    def update_ui_with_retrieved_value(self):
-        self.widget.blockSignals(True)
-        self.widget_setter(self.got)
-        self.widget.blockSignals(False)
+    def update_widget(self):
+        self._widget.blockSignals(True)
+        self._widget_setter(self._got)
+        self._widget.blockSignals(False)
 
     def __call__(self, *args, **kwargs):
-        self.got = self.model_getter()  # Save value immediately so displayed UI value matches model at time of update
-        self._sig.emit()
+        self._got = self._model_getter()  # Save value immediately so displayed UI value matches model at time of update
+        self._sig_update_widget.emit()
+
+
+class QWidgetUpdaterFactory(QObject):
+    T = TypeVar('T')
+
+    # Instance (singleton)
+    _instance: Optional['QWidgetUpdaterFactory'] = None
+
+    # Variables for inter-thread communication
+    _mutex = Lock()
+    _in_widget: Optional[QWidget] = None
+    _in_widget_setter: Optional[Callable[..., None]] = None
+    _in_model_getter: Optional[Callable[[], Any]] = None
+    _out_updater: Optional[QWidgetUpdater] = None
+
+    # Signal for invoking method on main thread
+    _sig_make_object = Signal()
+
+    @classmethod
+    def initialise(cls) -> None:
+        """
+        Create the singleton. This method must be executed first, and on the main thread. This method can be enqueued
+        to run upon QTApplication start by using `QTimer.singleShot(0, QWidgetUpdaterHost.initialise)`.
+        """
+        cls._instance = cls()
+
+    def __init__(self):
+        """
+        Intended to be called by `initialise` only. Instantiates the singleton, and checks if we're on the main thread.
+        If not, raises a RuntimeError.
+        """
+        super().__init__()
+        app = QtWidgets.QApplication.instance()
+        if app.thread() != QThread.currentThread():
+            raise RuntimeError('QWidgetUpdaterFactory must be created on the main thread')
+
+        self._sig_make_object.connect(self._create_QWidgetUpdater_on_main_thread)
+    
+    @classmethod
+    def _create_QWidgetUpdater_on_main_thread(cls):
+        # Intended to be run as a slot only!
+        cls._out_updater = QWidgetUpdater(cls._in_widget, cls._in_widget_setter, cls._in_model_getter)
+        cls._mutex.release()
+    
+    @classmethod
+    def create_QWidgetUpdater(
+            cls,
+            widget: QWidget,
+            widget_setter: Callable[[T], None],
+            model_getter: Callable[[], T]
+    ) -> QWidgetUpdater:
+        """
+        Creates a new QWidgetUpdater. If this is called from a secondary thread, the QWidgetUpdater is created on the
+         main thread via signal.
+        Parameters
+        ----------
+        widget The widget to be updated, required so signals can be blocked during update
+        widget_setter Function to be called on the widget with input from model_getter()
+        model_getter Retrieves the value to be provided to widget_setter
+
+        Returns QWidgetUpdater constructed on the main thread
+        -------
+
+        """
+        app = QtWidgets.QApplication.instance()
+        if app.thread() == QThread.currentThread():
+            # If already on main thread then just make object directly.
+            # This check works even if standard python threads (not QThreads) are used.
+            return QWidgetUpdater(widget, widget_setter, model_getter)
+
+        # On non-main thread
+        cls._mutex.acquire()  # Will be released when object is created (on main thread)
+        cls._in_widget = widget
+        cls._in_widget_setter = widget_setter
+        cls._in_model_getter = model_getter
+        cls._instance._sig_make_object.emit()  # Places object in _out_updater and releases lock
+
+        cls._mutex.acquire()  # Blocks until object is created
+        out = cls._out_updater
+        cls._in_widget = None
+        cls._in_widget_setter = None
+        cls._in_model_getter = None
+        cls._out_updater = None
+        cls._mutex.release()
+        return out
 
 
 class Binder:
@@ -85,12 +165,12 @@ class Binder:
         self._bind(widget_getter.__self__,
                    self.model,
                    *self._get_descriptors(widget_getter),
-                   model_prop,
-                   source,
-                   initial_value)
+                   model_property_descriptor=model_prop,
+                   source=source,
+                   initial_value=initial_value)
 
     @staticmethod
-    def _inflate(getter_descriptor, setter_descriptor, signal_name, widget):
+    def _inflate(getter_descriptor, setter_descriptor, signal_name, widget: QWidget):
         # signal retrieved dynamically (via string) because it resolves as a class attribute, so can't be used
         # as a descriptor.
         return (
@@ -100,7 +180,7 @@ class Binder:
         )
 
     @staticmethod
-    def _inflate_model_functions(prop, model):
+    def _inflate_model_functions(prop: property, model):
         # These partial classes can be eliminated for better performance
         return (
             partial(prop.fget, model),
@@ -139,7 +219,11 @@ class Binder:
 
         if source in ('model', 'both'):
             # Note that callback will get model value -just- before update, not necessarily of model value at change.
-            model.add_callback(model_property_descriptor, QWidgetUpdater(widget, w_setter, m_getter), ui=True)
+            model.add_callback(
+                model_property_descriptor,
+                QWidgetUpdaterFactory.create_QWidgetUpdater(widget, w_setter, m_getter),
+                ui=True
+            )
 
         if source in ('view', 'both'):
             def update_model():
@@ -186,8 +270,8 @@ class Binder:
                 getter_descriptor = getattr(klass, getter_name)
                 if not callable(getter_descriptor):
                     continue
-                retval = getter_descriptor, *cls._descriptors[getter_descriptor]
-                return retval
+                out = getter_descriptor, *cls._descriptors[getter_descriptor]
+                return out
             except (AttributeError, KeyError):
                 # AttributeError: missing descriptor
                 # KeyError: no entry for given descriptor
