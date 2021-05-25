@@ -6,7 +6,7 @@ from PySide2.QtWidgets import QTableWidget, QTableWidgetItem
 class BindableQTableWidget(QTableWidget):
     """
     Table widget that exposes its data for updating, and clears and repopulates the table on data change.
-    Intended to be used for simple one-way (VM->Table) binding for small datasets that don't change often.
+    Intended to be used for simple one-way (VM->Table) src for small datasets that don't change often.
     """
 
     def __init__(self, *args, **kwargs):

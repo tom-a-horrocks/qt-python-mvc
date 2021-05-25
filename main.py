@@ -2,8 +2,8 @@ import sys
 
 from PySide2.QtWidgets import QApplication
 
-from ui.controller import MainModel, MainController
-from ui.view import MainView
+from example.controller import MainModel, MainController
+from example.view import MainView
 
 if __name__ == '__main__':
     # Create the Qt Application

@@ -1,12 +1,9 @@
 from collections import namedtuple
 from functools import partial
-from threading import Lock
-from typing import Any, Callable, Optional, TypeVar
 
-from PySide2 import QtWidgets
-from PySide2.QtCore import QObject, Signal, QThread
 from PySide2.QtWidgets import QWidget, QLineEdit, QLabel, QCheckBox, QProgressBar, QDialog
 
+from .threads import MainThread
 from .observable import Observable
 from .widget import BindableQTableWidget
 
@@ -28,117 +25,9 @@ qt_getter_setter_signals = [
 ]
 
 
-class QWidgetUpdater(QObject):
-
-    _sig_update_widget = Signal()
-
-    def __init__(self, widget: QWidget, widget_setter: Callable[..., None], model_getter: Callable[[], Any]):
-        super().__init__()
-        self._widget = widget
-        self._model_getter = model_getter
-        self._widget_setter = widget_setter
-        self._got = None  # retrieved value from model
-
-        self._sig_update_widget.connect(self.update_widget)
-
-    def update_widget(self):
-        self._widget.blockSignals(True)
-        self._widget_setter(self._got)
-        self._widget.blockSignals(False)
-
-    def __call__(self, *args, **kwargs):
-        self._got = self._model_getter()  # Save value immediately so displayed UI value matches model at time of update
-        self._sig_update_widget.emit()
-
-
-class QWidgetUpdaterFactory(QObject):
-    T = TypeVar('T')
-
-    # Instance (singleton)
-    _instance: Optional['QWidgetUpdaterFactory'] = None
-
-    # Variables for inter-thread communication
-    _mutex = Lock()
-    _in_widget: Optional[QWidget] = None
-    _in_widget_setter: Optional[Callable[..., None]] = None
-    _in_model_getter: Optional[Callable[[], Any]] = None
-    _out_updater: Optional[QWidgetUpdater] = None
-
-    # Signal for invoking method on main thread
-    _sig_make_object = Signal()
-
-    @classmethod
-    def initialise(cls) -> None:
-        """
-        Create the singleton. This method must be executed first, and on the main thread. This method can be enqueued
-        to run upon QTApplication start by using `QTimer.singleShot(0, QWidgetUpdaterHost.initialise)`.
-        """
-        cls._instance = cls()
-
-    def __init__(self):
-        """
-        Intended to be called by `initialise` only. Instantiates the singleton, and checks if we're on the main thread.
-        If not, raises a RuntimeError.
-        """
-        super().__init__()
-        app = QtWidgets.QApplication.instance()
-        if app.thread() != QThread.currentThread():
-            raise RuntimeError('QWidgetUpdaterFactory must be created on the main thread')
-
-        self._sig_make_object.connect(self._create_QWidgetUpdater_on_main_thread)
-    
-    @classmethod
-    def _create_QWidgetUpdater_on_main_thread(cls):
-        # Intended to be run as a slot only!
-        cls._out_updater = QWidgetUpdater(cls._in_widget, cls._in_widget_setter, cls._in_model_getter)
-        cls._mutex.release()
-    
-    @classmethod
-    def create_QWidgetUpdater(
-            cls,
-            widget: QWidget,
-            widget_setter: Callable[[T], None],
-            model_getter: Callable[[], T]
-    ) -> QWidgetUpdater:
-        """
-        Creates a new QWidgetUpdater. If this is called from a secondary thread, the QWidgetUpdater is created on the
-         main thread via signal.
-        Parameters
-        ----------
-        widget The widget to be updated, required so signals can be blocked during update
-        widget_setter Function to be called on the widget with input from model_getter()
-        model_getter Retrieves the value to be provided to widget_setter
-
-        Returns QWidgetUpdater constructed on the main thread
-        -------
-
-        """
-        app = QtWidgets.QApplication.instance()
-        if app.thread() == QThread.currentThread():
-            # If already on main thread then just make object directly.
-            # This check works even if standard python threads (not QThreads) are used.
-            return QWidgetUpdater(widget, widget_setter, model_getter)
-
-        # On non-main thread
-        cls._mutex.acquire()  # Will be released when object is created (on main thread)
-        cls._in_widget = widget
-        cls._in_widget_setter = widget_setter
-        cls._in_model_getter = model_getter
-        cls._instance._sig_make_object.emit()  # Places object in _out_updater and releases lock
-
-        cls._mutex.acquire()  # Blocks until object is created
-        out = cls._out_updater
-        cls._in_widget = None
-        cls._in_widget_setter = None
-        cls._in_model_getter = None
-        cls._out_updater = None
-        cls._mutex.release()
-        return out
-
-
 class Binder:
     """
-    Class for binding properties. Any binding which updates the UI (i.e. source='model') _must_ be created on the
+    Class for src properties. Any src which updates the UI (i.e. source='model') _must_ be created on the
     main thread.
     """
 
@@ -219,17 +108,18 @@ class Binder:
 
         if source in ('model', 'both'):
             # Note that callback will get model value -just- before update, not necessarily of model value at change.
-            model.add_callback(
+            # noinspection PyProtectedMember
+            model._add_binding_callback(
                 model_property_descriptor,
-                QWidgetUpdaterFactory.create_QWidgetUpdater(widget, w_setter, m_getter),
-                ui=True
+                MainThread.create_QWidgetUpdater(widget, w_setter, m_getter)
             )
 
         if source in ('view', 'both'):
+            # noinspection PyProtectedMember
             def update_model():
-                model.disable_ui_callbacks(model_property_descriptor)
+                model._disable_view_bindings(model_property_descriptor)
                 m_setter(w_getter())
-                model.enable_ui_callbacks(model_property_descriptor)
+                model._enable_view_bindings(model_property_descriptor)
 
             w_sig.connect(update_model)
 
@@ -277,7 +167,7 @@ class Binder:
                 # KeyError: no entry for given descriptor
                 pass
 
-        # Could not find binding for this element
+        # Could not find src for this element
         raise RuntimeError(f'Matching setter not found for {getter_name} '
                            f'under the parent classes:  {[c.__name__ for c in widget_classes]}. '
-                           f'Please add to the binding module.')
+                           f'Please add to the src module.')

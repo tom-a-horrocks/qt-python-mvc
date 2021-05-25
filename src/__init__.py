@@ -1,4 +1,4 @@
 from .binding import Binder
-from .binding import QWidgetUpdaterFactory
+from .threads import MainThread
 from .observable import Observable
 from .observable import observable
