@@ -3,6 +3,8 @@ Qt for Python is an excellent way to create native-looking GUIs for your python 
 However, you may prefer the _properties and bindings_ approach to UI programming over Qt's _signals and slots_. 
 This repository implements bindings using signals and slots behind the scenes, and gives an example of how to fit it all together in a model-view-controller (MVC) architecture.
 
+*Warning:* This framework is under active development and the API is likely to change.
+
 ## Components
 ### Model
 The model is a simple class that exposes your program's state through properties. 
