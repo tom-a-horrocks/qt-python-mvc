@@ -1,4 +1,3 @@
-from .src import Binder
-from .src import Observable
-from .src import observable
-from .src import MainThread
+from .binding import Binder
+from .observable import Observable, observable
+from .threads import MainThread
