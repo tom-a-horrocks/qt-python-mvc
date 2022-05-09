@@ -5,23 +5,24 @@ from PySide2.QtWidgets import QWidget, QLineEdit, QLabel, QCheckBox, QProgressBa
 
 from .threads import MainThread
 from .observable import Observable
-from .widget import BindableQTableWidget
+from .widget import BindableQTableWidget, BindableQListWidget
 
 D = namedtuple('Descriptors', 'getter setter update_signal')
 
 # This list relates (unbound) widget getters to the related setters and
 # update signal (where it exists).
 qt_getter_setter_signals = [
-    D(getter=QLineEdit.text,                  setter=QLineEdit.setText,               update_signal='textChanged'),
-    D(getter=QLabel.text,                     setter=QLabel.setText,                  update_signal=None),
-    D(getter=QWidget.isVisible,               setter=QWidget.setVisible,              update_signal=None),
-    D(getter=QWidget.isEnabled,               setter=QWidget.setEnabled,              update_signal=None),
-    D(getter=QCheckBox.isChecked,             setter=QCheckBox.setChecked,            update_signal='toggled'),
-    D(getter=BindableQTableWidget.text_items, setter=BindableQTableWidget.set_data,   update_signal=None),
-    D(getter=BindableQTableWidget.QT_items,   setter=BindableQTableWidget.set_data,   update_signal=None),
-    D(getter=QProgressBar.value,              setter=QProgressBar.setValue,           update_signal=None),
-    D(getter=QProgressBar.maximum,            setter=QProgressBar.setMaximum,         update_signal=None),
-    D(getter=QDialog.result,                  setter=QDialog.setResult,               update_signal='finished')
+    D(getter=QLineEdit.text,                  setter=QLineEdit.setText,                  update_signal='textChanged'),
+    D(getter=QLabel.text,                     setter=QLabel.setText,                     update_signal=None),
+    D(getter=QWidget.isVisible,               setter=QWidget.setVisible,                 update_signal=None),
+    D(getter=QWidget.isEnabled,               setter=QWidget.setEnabled,                 update_signal=None),
+    D(getter=QCheckBox.isChecked,             setter=QCheckBox.setChecked,               update_signal='toggled'),
+    D(getter=BindableQTableWidget.text_items, setter=BindableQTableWidget.set_data,      update_signal=None),
+    D(getter=BindableQTableWidget.QT_items,   setter=BindableQTableWidget.set_data,      update_signal=None),
+    D(getter=QProgressBar.value,              setter=QProgressBar.setValue,              update_signal=None),
+    D(getter=QProgressBar.maximum,            setter=QProgressBar.setMaximum,            update_signal=None),
+    D(getter=QDialog.result,                  setter=QDialog.setResult,                  update_signal='finished'),
+    D(getter=BindableQListWidget.text_items,  setter=BindableQListWidget.set_text_items, update_signal=None),
 ]
 
 

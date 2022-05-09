@@ -1,6 +1,18 @@
 from typing import List, Union
 
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QListWidget
+
+
+class BindableQListWidget(QListWidget):
+
+    def __init__(self, *args, **kwargs):
+        super(BindableQListWidget, self).__init__(*args, **kwargs)
+
+    def text_items(self) -> List[str]:
+        return [self.item(i).text() for i in range(self.count())]
+
+    def set_text_items(self, text_items: List[str]):
+        self.addItems(text_items)
 
 
 class BindableQTableWidget(QTableWidget):
