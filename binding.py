@@ -5,7 +5,7 @@ from PySide2.QtWidgets import QWidget, QLineEdit, QLabel, QCheckBox, QProgressBa
 
 from .threads import MainThread
 from .observable import Observable
-from .widget import BindableQTableWidget, BindableQListWidget
+from .widget import BindableQTableWidget, BindableQListWidget, QMovieWidget
 
 D = namedtuple('Descriptors', 'getter setter update_signal')
 
@@ -23,6 +23,7 @@ qt_getter_setter_signals = [
     D(getter=QProgressBar.maximum,            setter=QProgressBar.setMaximum,            update_signal=None),
     D(getter=QDialog.result,                  setter=QDialog.setResult,                  update_signal='finished'),
     D(getter=BindableQListWidget.text_items,  setter=BindableQListWidget.set_text_items, update_signal=None),
+    D(getter=QMovieWidget.is_running,         setter=QMovieWidget.set_running,           update_signal=None),
 ]
 
 

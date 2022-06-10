@@ -1,6 +1,22 @@
 from typing import List, Union
 
-from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QListWidget
+from PySide2.QtGui import QMovie
+from PySide2.QtWidgets import QTableWidget, QTableWidgetItem, QListWidget, QLabel
+
+
+class QMovieWidget(QLabel):
+
+    def __init__(self, *args, **kwargs):
+        super(QMovieWidget, self).__init__(*args, **kwargs)
+
+    def is_running(self) -> bool:
+        return self.movie().MovieState == QMovie.Running
+
+    def set_running(self, run: bool) -> None:
+        if run:
+            self.movie().start()
+        else:
+            self.movie().stop()
 
 
 class BindableQListWidget(QListWidget):
