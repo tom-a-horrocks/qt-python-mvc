@@ -88,7 +88,8 @@ class View(QDialog):
     # If there are no initial values, model and view will be out of sync.
     model = Model()
     b = Binder(model)
-    b.two_way(elements=(line_edit.text, Model.edit_text),
+    b.two_way(element1=line_edit.text, 
+              element2=Model.edit_text,
               initial_value='Enter text here...')
     b.one_way(source=Model.button_enabled,
               sink=push_button.isEnabled)
