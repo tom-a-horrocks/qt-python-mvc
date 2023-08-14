@@ -39,19 +39,24 @@ class MainView(QDialog):
 
     def bind_to_model(self, model: MainModel):
         b = Binder(model)
-        b.two_way(elements=(self.line_edit.text, MainModel.edit_text),
+        b.two_way(self.line_edit.text,
+                  MainModel.edit_text,
                   initial_value='Enter text here...')
         b.one_way(source=MainModel.label_text,
                   sink=self.label.text,
                   initial_value='Enter text here...')
-        b.two_way(elements=(self.check_box.isChecked, MainModel.is_checked),
+        b.two_way(self.check_box.isChecked,
+                  MainModel.is_checked,
                   initial_value=False)
         b.one_way(source=MainModel.button_enabled,
                   sink=self.push_button.isEnabled)
-        b.two_way(elements=(self.radio_buttons[0].isChecked, MainModel.checked_1),
+        b.two_way(self.radio_buttons[0].isChecked,
+                  MainModel.checked_1,
                   initial_value=False)
-        b.two_way(elements=(self.radio_buttons[1].isChecked, MainModel.checked_2),
+        b.two_way(self.radio_buttons[1].isChecked,
+                  MainModel.checked_2,
                   initial_value=False)
-        b.two_way(elements=(self.radio_buttons[2].isChecked, MainModel.checked_3),
+        b.two_way(self.radio_buttons[2].isChecked,
+                  MainModel.checked_3,
                   initial_value=True)
 
